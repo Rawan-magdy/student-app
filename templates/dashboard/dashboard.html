@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2 class="mb-4" style="margin-top:8px;">Welcome back, {{ user.username }} </h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><div class="stat-label">Total Tasks</div><div class="stat-value">{{ total_tasks }}</div></div>
+        <div class="stat-icon"><i class="bi bi-check2-square"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><div class="stat-label">Completed</div><div class="stat-value">{{ completed_tasks }}</div></div>
+        <div class="stat-icon"><i class="bi bi-trophy"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><div class="stat-label">Pending</div><div class="stat-value">{{ pending_tasks }}</div></div>
+        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><div class="stat-label">Notes</div><div class="stat-value">{{ total_notes }}</div></div>
+        <div class="stat-icon"><i class="bi bi-journal-text"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4"><div class="card-body">
+  <h6>Overall Progress</h6>
+  <div class="progress" style="height: 22px;">
+    <div class="progress-bar" role="progressbar" style="width: {{ progress }}%;">{{ progress }}%</div>
+  </div>
+</div></div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Upcoming Tasks (7 days)</div>
+      <ul class="list-group list-group-flush">
+        {% for task in upcoming_tasks %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ task.title }}</span>
+            <span class="badge bg-secondary">{{ task.due_date }}</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No upcoming tasks </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Recent Activity</div>
+      <ul class="list-group list-group-flush">
+        {% for activity in recent_activities %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ activity.action }}</span>
+            <small class="text-muted">{{ activity.created_at|timesince }} ago</small>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No activity yet</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-2">
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h6 class="text-center mb-3">Tasks Status</h6>
+      <canvas id="statusChart"></canvas>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h6 class="text-center mb-3">Tasks by Priority</h6>
+      <canvas id="priorityChart"></canvas>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h6 class="text-center mb-3">Notes by Category</h6>
+      {% if category_labels_raw %}
+        <canvas id="categoryChart"></canvas>
+      {% else %}
+        <p class="text-center text-muted my-5">No categories yet.<br>Add a category to a note to see this chart.</p>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+
+{{ status_data|json_script:"statusData" }}
+{{ priority_data|json_script:"priorityData" }}
+{{ category_labels|json_script:"categoryLabels" }}
+{{ category_data|json_script:"categoryData" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+Chart.defaults.color = '#8ba99e';
+Chart.defaults.borderColor = 'rgba(139,169,158,.15)';
+
+const statusData     = JSON.parse(document.getElementById('statusData').textContent);
+const priorityData   = JSON.parse(document.getElementById('priorityData').textContent);
+const categoryLabels = JSON.parse(document.getElementById('categoryLabels').textContent);
+const categoryData   = JSON.parse(document.getElementById('categoryData').textContent);
+
+const TEAL      = '#2dd4bf';
+const TEAL_DK   = '#0d9488';
+const TEAL_LT   = '#5eead4';
+const EMERALD   = '#34d399';
+const MUTED     = '#8ba99e';
+const GRID      = 'rgba(139,169,158,.15)';
+
+const intAxis = {
+    y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0, color: MUTED }, grid: { color: GRID } },
+    x: { ticks: { color: MUTED }, grid: { display: false } }
+};
+
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: { labels: ['Completed', 'Pending'],
+        datasets: [{ data: statusData, backgroundColor: [TEAL, TEAL_DK], borderColor: 'transparent', borderWidth: 2 }] },
+    options: { plugins: { legend: { position: 'bottom', labels: { color: MUTED } } }, cutout: '65%' }
+});
+
+new Chart(document.getElementById('priorityChart'), {
+    type: 'bar',
+    data: { labels: ['Low', 'Medium', 'High'],
+        datasets: [{ label: 'Tasks', data: priorityData,
+            backgroundColor: [TEAL_LT, TEAL, TEAL_DK], borderRadius: 6, maxBarThickness: 70 }] },
+    options: { plugins: { legend: { display: false } }, scales: intAxis }
+});
+
+const catCanvas = document.getElementById('categoryChart');
+if (catCanvas) {
+    new Chart(catCanvas, {
+        type: 'bar',
+        data: { labels: categoryLabels,
+            datasets: [{ label: 'Notes', data: categoryData, backgroundColor: EMERALD, borderRadius: 6, maxBarThickness: 70 }] },
+        options: { plugins: { legend: { display: false } }, scales: intAxis }
+    });
+}
+</script>
+
+{% endblock %}

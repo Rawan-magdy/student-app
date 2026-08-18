@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>My Resources</h3>
+  <a href="{% url 'resource_create' %}" class="btn btn-primary">+ Add Resource</a>
+</div>
+
+<div class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" id="liveSearch" class="form-control"
+           placeholder="Type to filter instantly (JavaScript)...">
+  </div>
+  <div class="col-md-6">
+    <form method="get" class="d-flex gap-2">
+      <select name="type" class="form-select" onchange="this.form.submit()">
+        <option value="">All Types</option>
+        {% for t in types %}
+          <option value="{{ t.id }}" {% if selected_type == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<table class="table table-hover align-middle">
+  <thead class="table-light">
+    <tr><th>Title</th><th>Type</th><th>Link</th><th>Actions</th></tr>
+  </thead>
+  <tbody id="resourceTable">
+    {% for res in page_obj %}
+      <tr>
+        <td>
+          <strong>{{ res.title }}</strong>
+          <div class="text-muted small">{{ res.description|truncatewords:10 }}</div>
+        </td>
+        <td>{% if res.resource_type %}<span class="badge bg-info">{{ res.resource_type.name }}</span>{% endif %}</td>
+        <td><a href="{{ res.link }}" target="_blank">Open ↗</a></td>
+        <td>
+          <a href="{% url 'resource_update' res.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+          <a href="{% url 'resource_delete' res.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="text-center text-muted">No resources yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+<nav>
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+<script>
+const searchInput = document.getElementById('liveSearch');
+const table = document.getElementById('resourceTable');
+
+searchInput.addEventListener('keyup', function () {
+    const term = this.value.toLowerCase();
+    const rows = table.getElementsByTagName('tr');
+
+    for (let row of rows) {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+    }
+});
+</script>
+
+{% endblock %}

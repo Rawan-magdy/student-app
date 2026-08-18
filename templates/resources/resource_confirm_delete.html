@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="alert alert-danger">Delete "<strong>{{ resource.title }}</strong>"?</div>
+<form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Yes, delete</button>
+    <a href="{% url 'resource_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
